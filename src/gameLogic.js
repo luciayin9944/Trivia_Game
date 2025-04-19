@@ -5,7 +5,8 @@ import { getRandomQuestions } from "./questionService.js";
 
 let score = 0;
 let questionCount = 0;
-let usedQuestions = [];
+const usedQuestions = [];
+const answeredQuestions = [];
 
 export async function showMainMenu() {
     const action = await select({
@@ -13,23 +14,17 @@ export async function showMainMenu() {
       choices: [
         { name: "Start Game", value: "start" },
         { name: "See Scores", value: "score" },
-        { name: "Reset Score", value: "reset" },
         { name: "Quit", value: "quit" },
       ],
     });
   
     switch (action) {
       case "start":
-        questionCount = 0; //reset
-        score = 0; 
+        resetGame();
         await startGame();
         break;
       case "score":
         showScore();
-        break;
-      case "reset":
-        resetGame();
-        console.log(chalk.blue("Score has been reset."));
         await showMainMenu();
         break;
       case "quit":
@@ -39,44 +34,9 @@ export async function showMainMenu() {
 }
 
 
-
-// export async function startGame() {
-//     const selectedQ = getRandomQuestions(1);
-//     //console.log('Selected question:', selectedQ);
-//     const question = selectedQ[0];
-//     //console.log('Question object:', question);
-//     const { question: qText, choices, answer } = question;
-
-//     console.log(`\nQuestion: ${qText}`);
-
-//     const userChoice = await select({
-//         message: "Choose your answer:",
-//         choices: choices.map((choice) => ({ name: choice, value: choice })), 
-//     });
-
-//     if (userChoice === answer) {
-//         console.log(chalk.yellow("Correct!\n"));
-//         score++;
-//       } else {
-//         console.log(chalk.red(`Wrong! Correct answer: ${answer}\n`));
-//       }
-    
-//       incrementCounter();
-// }
-
-// function incrementCounter() {
-//     questionCount++;
-  
-//     if (questionCount === 6) {
-//       console.log("\n You've completed");
-//       showScore(); 
-//     } else {
-//       startGame(); // next question
-//     }
-//   }
-
-
 export async function startGame() {
+  //WRONG: resetGame() 
+  
   const [question] = getRandomQuestions(1, usedQuestions);
   if (!question) {
     console.log("No more questions left!");
@@ -84,7 +44,6 @@ export async function startGame() {
   }
 
   usedQuestions.push(question.question);  // record used questions
-
   const { question: qText, choices, answer } = question;
 
   console.log(`\nQuestion: ${qText}`);
@@ -101,26 +60,45 @@ export async function startGame() {
     console.log(chalk.red(`Wrong! The correct answer is ${answer}`));
   }
 
+  answeredQuestions.push({
+    question: question.question,
+    userAnswer: userChoice,
+    correctAnswer: question.answer,
+    isCorrect: userChoice === question.answer
+  });
+
   if (usedQuestions.length >= 6) {
     console.log(chalk.yellow("\nYou're done!"));
-    return showScore(score);
+    showScore();
+    showSummary(answeredQuestions);
+    console.log("\n Do you want to play again?")
+    //WRONG: showMainMenu()
+    await showMainMenu(); // async call
   }
 
   await startGame(); 
 }
 
-function showScore(final = false) {
+function showScore() {
 console.log(chalk.yellow(`\nYour score is: ${score}\n`));
-if (!final) {
-    showMainMenu();
-} else {
-    process.exit(0); // game over; then exit
+//showMainMenu();
 }
+
+function showSummary(answeredQuestions) {
+  console.log("\n Here's a summary of your answers:\n");
+
+  answeredQuestions.forEach((q, index) => {
+    console.log(`Q${index+1}: ${q.question}`)
+    console.log(`   Correct answer: ${q.correctAnswer}`);
+    console.log(`   Result: ${q.isCorrect ? 'Correct' : 'Incorrect'}`);
+  });
 }
 
 function resetGame() {
 score = 0;
 questionCount = 0;
+usedQuestions.length = 0;
+answeredQuestions.length = 0;
 }
 
 
