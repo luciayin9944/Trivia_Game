@@ -37,57 +37,64 @@ export async function showMainMenu() {
 
 
 // Start the trivia game loop
-//Add timer 
+// use while loop
 export async function startGame() {
-  const [question] = getRandomQuestions(1, usedQuestions);
-  if (!question) {
-    console.log("No more questions left!");
-    return showScore(score);
+  // Keep asking questions until 6 unique questions have been used
+  while (usedQuestions.length < 6) {
+    // Get one random question that hasn't been used yet
+    ////const [question] = getRandomQuestions(1, usedQuestions);
+    const newQuestions = getRandomQuestions(1, usedQuestions);
+    const [question] = newQuestions;
+
+    if (!question) {
+      console.log("No more questions left!");
+      break;
+    }
+
+    // Mark this question as used
+    usedQuestions.push(question.question);
+
+    // Destructure question details
+    const { question: qText, choices, answer } = question;
+    console.log(`\nQuestion: ${qText}`);
+
+    // timer for answer with a timeout (default 5 seconds)
+    const userChoice = await answerTimeout({
+      message: "Choose your answer",
+      choices: choices.map((choice) => ({ name: choice, value: choice })),
+      timeout: 5000
+    });
+
+    // Evaluate user's response
+    if (userChoice === null) {
+      console.log(chalk.red("\n Time's up! You didn't answer in time."));
+    } else if (userChoice === answer) {
+      console.log(chalk.green("Correct!"));
+      score++;
+    } else {
+      console.log(chalk.red(`Wrong! The correct answer is ${answer}`));
+    }
+
+    // Store the question result in summary
+    answeredQuestions.push({
+      question: question.question,
+      userAnswer: userChoice ?? 'No Answer',
+      correctAnswer: question.answer,
+      isCorrect: userChoice === question.answer
+    });
   }
 
-  usedQuestions.push(question.question); /// Mark question as used
-  const { question: qText, choices, answer } = question;
-
-  console.log(`\nQuestion: ${qText}`);
-
-  const userChoice = await answerTimeout({
-    message: "Choose your answer",
-    choices: choices.map((choice) => ({ name: choice, value: choice })),
-    timeout: 5000 //5 seconds to answer the question
-  });
-
-  //display user choice
-  if (userChoice === null) {
-    console.log(chalk.red("\n Time's up! You didn't answer in time."));
-  } else if (userChoice === answer) {
-    console.log(chalk.green("Correct!"));
-    score++;
-  } else {
-    console.log(chalk.red(`Wrong! The correct answer is ${answer}`));
-  }
-
-  answeredQuestions.push({
-    question: question.question,
-    userAnswer: userChoice ?? 'No Answer',
-    correctAnswer: question.answer,
-    isCorrect: userChoice === question.answer
-  });
-
-  if (usedQuestions.length >= 6) {
-    console.log(chalk.yellow("\nYou're done!"));
-    showScore();
-    showSummary(answeredQuestions);
-    console.log("\nDo you want to play again?");
-    await showMainMenu(); 
-    return; //end recursive loop
-  }
-
-  await startGame(); //Continue to next question（recursive call)
+  // Game finished
+  console.log(chalk.yellow("\nYou're done!"));
+  showScore();
+  showSummary(answeredQuestions);
+  await showMainMenu();
 }
+
 
 // Show the current score
 function showScore() {
-  console.log(chalk.yellow(`\nYour score is: ${score}/6\n`));
+  console.log(chalk.yellow(`\nYour score is: ${score}\n`));
 }
 
 // Display summary of user answers
@@ -142,6 +149,53 @@ export async function answerTimeout({ message, choices, timeout = 5000 }) {
 
 
 
+// use recursive loop
+// export async function startGame() {
+//   const [question] = getRandomQuestions(1, usedQuestions);
+//   if (!question) {
+//     console.log("No more questions left!");
+//     return showScore(score);
+//   }
+
+//   usedQuestions.push(question.question); /// Mark question as used
+//   const { question: qText, choices, answer } = question;
+
+//   console.log(`\nQuestion: ${qText}`);
+
+//   const userChoice = await answerTimeout({
+//     message: "Choose your answer",
+//     choices: choices.map((choice) => ({ name: choice, value: choice })),
+//     timeout: 5000 //5 seconds to answer the question
+//   });
+
+//   //display user choice
+//   if (userChoice === null) {
+//     console.log(chalk.red("\n Time's up! You didn't answer in time."));
+//   } else if (userChoice === answer) {
+//     console.log(chalk.green("Correct!"));
+//     score++;
+//   } else {
+//     console.log(chalk.red(`Wrong! The correct answer is ${answer}`));
+//   }
+
+//   answeredQuestions.push({
+//     question: question.question,
+//     userAnswer: userChoice ?? 'No Answer',
+//     correctAnswer: question.answer,
+//     isCorrect: userChoice === question.answer
+//   });
+
+//   if (usedQuestions.length >= 6) {
+//     console.log(chalk.yellow("\nYou're done!"));
+//     showScore();
+//     showSummary(answeredQuestions);
+//     console.log("\nDo you want to play again?");
+//     await showMainMenu(); 
+//     return; //end recursive loop
+//   }
+
+//   await startGame(); //Continue to next question（recursive call)
+// }
 
 
 
