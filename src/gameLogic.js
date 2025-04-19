@@ -3,11 +3,13 @@ import chalk from "chalk";
 import { select } from "@inquirer/prompts";
 import { getRandomQuestions } from "./questionService.js";
 
+// Keep track of score, question count, used questions, and user answers
 let score = 0;
 let questionCount = 0;
 const usedQuestions = [];
 const answeredQuestions = [];
 
+// Display the main menu
 export async function showMainMenu() {
     const action = await select({
       message: "Main Menu",
@@ -20,11 +22,11 @@ export async function showMainMenu() {
   
     switch (action) {
       case "start":
-        resetGame();
+        resetGame(); // Reset game state
         await startGame();
         break;
       case "score":
-        showScore();
+        showScore(); // Display current score
         await showMainMenu();
         break;
       case "quit":
@@ -34,26 +36,30 @@ export async function showMainMenu() {
 }
 
 
+// Start the trivia game loop
+//Add timer 
 export async function startGame() {
-  //WRONG: resetGame() 
-  
   const [question] = getRandomQuestions(1, usedQuestions);
   if (!question) {
     console.log("No more questions left!");
     return showScore(score);
   }
 
-  usedQuestions.push(question.question);  // record used questions
+  usedQuestions.push(question.question); /// Mark question as used
   const { question: qText, choices, answer } = question;
 
   console.log(`\nQuestion: ${qText}`);
 
-  const userChoice = await select({
+  const userChoice = await answerTimeout({
     message: "Choose your answer",
     choices: choices.map((choice) => ({ name: choice, value: choice })),
+    timeout: 5000 //5 seconds to answer the question
   });
 
-  if (userChoice === answer) {
+  //display user choice
+  if (userChoice === null) {
+    console.log(chalk.red("\n Time's up! You didn't answer in time."));
+  } else if (userChoice === answer) {
     console.log(chalk.green("Correct!"));
     score++;
   } else {
@@ -62,7 +68,7 @@ export async function startGame() {
 
   answeredQuestions.push({
     question: question.question,
-    userAnswer: userChoice,
+    userAnswer: userChoice ?? 'No Answer',
     correctAnswer: question.answer,
     isCorrect: userChoice === question.answer
   });
@@ -71,34 +77,66 @@ export async function startGame() {
     console.log(chalk.yellow("\nYou're done!"));
     showScore();
     showSummary(answeredQuestions);
-    console.log("\n Do you want to play again?")
-    //WRONG: showMainMenu()
-    await showMainMenu(); // async call
+    console.log("\nDo you want to play again?");
+    await showMainMenu(); 
+    return; //end recursive loop
   }
 
-  await startGame(); 
+  await startGame(); //Continue to next question（recursive call)
 }
 
+// Show the current score
 function showScore() {
-console.log(chalk.yellow(`\nYour score is: ${score}\n`));
-//showMainMenu();
+  console.log(chalk.yellow(`\nYour score is: ${score}/6\n`));
 }
 
+// Display summary of user answers
 function showSummary(answeredQuestions) {
-  console.log("\n Here's a summary of your answers:\n");
+  console.log("\nHere's a summary of your answers:\n");
 
   answeredQuestions.forEach((q, index) => {
-    console.log(`Q${index+1}: ${q.question}`)
+    console.log(`Q${index + 1}: ${q.question}`);
     console.log(`   Correct answer: ${q.correctAnswer}`);
-    console.log(`   Result: ${q.isCorrect ? 'Correct' : 'Incorrect'}`);
+
+    if (q.userAnswer === null || q.userAnswer === 'No Answer') {
+      console.log(chalk.red("   Result: Didn't answer"));
+    } else if (q.isCorrect) {
+      console.log(chalk.green("   Result: Correct"));
+    } else {
+      console.log(chalk.red("   Result: Incorrect"));
+      console.log(`   Your answer: ${q.userAnswer}`);
+    }
   });
 }
 
+// Reset all game state
 function resetGame() {
-score = 0;
-questionCount = 0;
-usedQuestions.length = 0;
-answeredQuestions.length = 0;
+  score = 0;
+  questionCount = 0;
+  usedQuestions.length = 0;
+  answeredQuestions.length = 0;
+}
+
+// Select with timeout limit
+export async function answerTimeout({ message, choices, timeout = 5000 }) {
+  try {
+    const userChoice = await Promise.race([
+      select({
+        message,
+        choices,
+      }),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("timeout")), timeout)
+      ),
+    ]);
+    return userChoice;
+  } catch (err) {
+    if (err.message === "timeout") {
+      return null;  // Timeout - user did not answer
+    } else {
+      throw err; // Rethrow other errors
+    }
+  }
 }
 
 
@@ -115,6 +153,10 @@ answeredQuestions.length = 0;
 
 
 
+
+
+///////////////////////////////////////////////////////////////////////////////////////
+//pseudocode//
 
 // import chalk from "chalk";
 // import { select } from "@inquirer/prompts";
