@@ -11,28 +11,29 @@ const answeredQuestions = [];
 
 // Display the main menu
 export async function showMainMenu() {
-    const action = await select({
-      message: "Main Menu",
-      choices: [
-        { name: "Start Game", value: "start" },
-        { name: "See Scores", value: "score" },
-        { name: "Quit", value: "quit" },
-      ],
-    });
-  
-    switch (action) {
-      case "start":
-        resetGame(); // Reset game state
-        await startGame();
-        break;
-      case "score":
-        showScore(); // Display current score
-        await showMainMenu();
-        break;
-      case "quit":
-        console.log("Goodbye!");
-        process.exit(0);
-    }
+  const action = await select({
+    message: "Main Menu",
+    choices: [
+      { name: "Start Game", value: "start" },
+      { name: "See Scores", value: "score" },
+      { name: "Quit", value: "quit" },
+    ],
+  });
+
+  switch (action) {
+    case "start":
+      console.log(chalk.cyanBright("\n Welcome to the Trivia Game! You'll answer 6 questions with 5 seconds each. Good luck!\n"));
+      resetGame(); // Reset game state
+      await startGame();
+      break;
+    case "score":
+      showScore(); // Display current score
+      await showMainMenu();
+      break;
+    case "quit":
+      console.log("Goodbye!");
+      process.exit(0);
+  }
 }
 
 
@@ -88,6 +89,7 @@ export async function startGame() {
   console.log(chalk.yellow("\nYou're done!"));
   showScore();
   showSummary(answeredQuestions);
+  console.log("\nDo you want to play again?");
   await showMainMenu();
 }
 
@@ -149,7 +151,7 @@ export async function answerTimeout({ message, choices, timeout = 5000 }) {
 
 
 
-// use recursive loop
+// ////use recursive loop
 // export async function startGame() {
 //   const [question] = getRandomQuestions(1, usedQuestions);
 //   if (!question) {
